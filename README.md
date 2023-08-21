@@ -9,6 +9,7 @@
   - [Features](#features)
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Creating a .env File](#creating-a-env-file)
   - [Speech Feature](#speech-feature)
   - [APIs Used](#apis-used)
 
@@ -62,7 +63,19 @@ To get started with Relevant Data Chat, follow these steps:
 - To upload data, type "Load Data ____" in the top input line and press "Enter."
 - Ask questions in the bottom input line and press "Enter" to get answers.
 
-## Speech/Voice Feature
+## Creating a .env File
+
+Before using the APIs mentioned in this project, it's important to create a `.env` file to securely store your API Keys. Here's how to do it:
+
+1. In the root directory of your project, create a file named `.env` if it doesn't already exist.
+
+2. Inside the `.env` file, add your API Keys using the following format:
+
+   ```javascript
+   PUBLIC_API_KEY = "API key here"
+
+
+## Speech Feature
 
 The chatbot includes a speech feature:
 
