@@ -183,7 +183,8 @@
 
       console.log(response);
 
-    return response.output_text;
+    // return response.output_text;
+    return response
   }
 
 

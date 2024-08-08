@@ -3,9 +3,7 @@ import { PUBLIC_OPENAI_API_KEY } from '$env/static/public';
 import { PUBLIC_SERPAPI_API_KEY } from '$env/static/public'; 
 import { PUBLIC_HF_API_KEY } from '$env/static/public';
 import type { RequestEvent } from '@sveltejs/kit';
-import { OpenAI } from 'langchain/llms/openai';
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { loadQARefineChain } from "langchain/chains";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Configuration, OpenAIApi } from "openai";
 import { getJson } from "serpapi";
@@ -21,6 +19,10 @@ export const POST = async (event: RequestEvent) => {
 
   const requestBody = await event.request.json();
   const { loadDataInput, userInput, dataName } = requestBody;
+
+  console.log("PUBLIC_OPENAI_API_KEY:", PUBLIC_OPENAI_API_KEY);
+  console.log("PUBLIC_SERPAPI_API_KEY:", PUBLIC_SERPAPI_API_KEY);
+  console.log("PUBLIC_HF_API_KEY:", PUBLIC_HF_API_KEY);
  
   if(loadDataInput && loadDataInput.trim() !== ""){
     
@@ -81,34 +83,36 @@ export const POST = async (event: RequestEvent) => {
   
   if(userInput && userInput.trim()!==""){
     console.log("Got here because there's a user input");
-    console.log(userInput);
-    console.log(contentDocuments);
+    console.log("userInput: ", userInput);
+    console.log("docs: ", contentDocuments);
     const store = await MemoryVectorStore.fromDocuments(contentDocuments, new HuggingFaceInferenceEmbeddings({apiKey: PUBLIC_HF_API_KEY }));
-
-    const model = new OpenAI({
-      temperature: 0.0,
-      openAIApiKey: PUBLIC_OPENAI_API_KEY,
-
-    });
-    const chain = loadQARefineChain(model);
 
     const relevantDocs = await store.similaritySearch(userInput);
     console.log(relevantDocs);
     console.log("WE GOT HERE TOO.")
     console.log(userInput);
 
-    const question = userInput + "Don't include information not directly relevant to the question.";
+    const combinedDocuments = relevantDocs.map(doc => doc.pageContent).join("\n\n");
 
-    const res = await chain.call({
-      input_documents: relevantDocs,
-      question, 
+    // Create the prompt
+    const prompt = `Based on the following data, answer the question:\n\n${combinedDocuments}\n\nQuestion: ${userInput}`;
+
+    const configuration = new Configuration({
+      apiKey: PUBLIC_OPENAI_API_KEY,
     });
+    const openai = new OpenAIApi(configuration);
 
-    
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [ 
+        {role: 'system', content: prompt}
+      ],
+    });
+    console.log("Response from OpenAI:", completion.data.choices[0].message?.content);
 
-    console.log(res);
 
-    return json({ result: res });
+   
+    return json({ result: completion.data.choices[0].message?.content});
   } else{
     return json({ result: "Data on " + dataName + " has been loaded. Ask anything you'd like about " + dataName + "!"})
   }
